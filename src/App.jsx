@@ -40,7 +40,7 @@ const templates = [
   },
   {
     id: 'modern',
-    name: 'Modern 3D',
+    name: 'Modern',
     description: 'A bento grid of layered tiles with skill bars and tabs.',
     tagline: 'Bento tiles with a layered 3D feel.',
   },
@@ -76,7 +76,7 @@ function TemplatePreview({ id }) {
   if (id === 'modern') {
     return (
       <div className="template-preview modern-preview">
-        <span className="preview-number">02 / MODERN 3D</span>
+        <span className="preview-number">02 / MODERN</span>
         <div className="modern-mini">
           <div className="modern-mini-label">PORTFOLIO / 2026</div>
           <div className="modern-mini-title">
@@ -315,6 +315,9 @@ function AppContent() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [generating, setGenerating] = useState(null)
   const [previewTemplate, setPreviewTemplate] = useState(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [activeSection, setActiveSection] = useState('home')
+  const [shareToast, setShareToast] = useState(false)
 
   // Landing page template preview: Esc closes it and the page behind stays put
   useEffect(() => {
@@ -333,6 +336,30 @@ function AppContent() {
       document.body.style.overflow = previousOverflow
     }
   }, [previewTemplate])
+
+  // Track which landing-page section is in view for nav highlighting
+  useEffect(() => {
+    if (currentPage !== 'home') return undefined
+
+    const sectionIds = ['home', 'templates', 'about']
+    const observers = []
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id)
+      if (!el) return
+
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActiveSection(id)
+        },
+        { rootMargin: '-40% 0px -55% 0px', threshold: 0 }
+      )
+      obs.observe(el)
+      observers.push(obs)
+    })
+
+    return () => observers.forEach((obs) => obs.disconnect())
+  }, [currentPage])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -642,7 +669,12 @@ function AppContent() {
     setAuthMessage('')
   }
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false)
     try {
       await signOut(auth)
       gooeyToast.info('Logged out', { description: 'See you next time!' })
@@ -749,6 +781,44 @@ function AppContent() {
   }
 
   const appClass = darkMode ? 'app dark-mode' : 'app light-mode'
+
+  const logoutModal = showLogoutConfirm && (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onClick={() => setShowLogoutConfirm(false)}
+    >
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="logout-title">Log out?</h2>
+        <p>
+          You will be signed out of PortaVista. Your portfolios are saved
+          and will be here when you come back.
+        </p>
+        <div className="modal-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setShowLogoutConfirm(false)}
+          >
+            Stay logged in
+          </button>
+          <button
+            className="danger-button"
+            type="button"
+            onClick={confirmLogout}
+          >
+            Log out
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   const deleteModal = deleteTarget && (
     <div
@@ -1021,26 +1091,33 @@ function AppContent() {
             </div>
           )}
 
-          <section className="dash-steps" aria-label="How it works">
-            <div>
-              <span>1</span>
-              <strong>Add your details</strong>
-              <p>Fill in your info, skills, and projects.</p>
+          <div className="dash-steps-wrapper">
+            <div className="dash-steps-header">
+              <span className="dash-steps-label">How it works</span>
+              <span className="dash-steps-divider" />
             </div>
-            <div>
-              <span>2</span>
-              <strong>Pick a style</strong>
-              <p>Choose from three different layouts.</p>
-            </div>
-            <div>
-              <span>3</span>
-              <strong>Preview and edit</strong>
-              <p>Come back anytime to update or delete.</p>
-            </div>
-          </section>
+            <section className="dash-steps" aria-label="How it works">
+              <div>
+                <span>1</span>
+                <strong>Add your details</strong>
+                <p>Fill in your info, skills, and projects.</p>
+              </div>
+              <div>
+                <span>2</span>
+                <strong>Pick a style</strong>
+                <p>Choose from three different layouts.</p>
+              </div>
+              <div>
+                <span>3</span>
+                <strong>Preview and share</strong>
+                <p>Copy the link or download your portfolio.</p>
+              </div>
+            </section>
+          </div>
         </main>
 
         {deleteModal}
+        {logoutModal}
       </div>
     )
   }
@@ -1131,6 +1208,36 @@ function AppContent() {
       normalizeTemplateId(portfolioData?.selectedTemplate) || 'simple'
     }`
 
+    const portfolioUrl = window.location.href
+
+    const handleCopyLink = () => {
+      navigator.clipboard.writeText(portfolioUrl).then(() => {
+        setShareToast(true)
+        setTimeout(() => setShareToast(false), 2500)
+        gooeyToast.success('Link copied!', {
+          description: 'Share this URL to let others view your portfolio.',
+        })
+      }).catch(() => {
+        gooeyToast.error('Could not copy the link', {
+          description: 'Try copying the address bar manually.',
+        })
+      })
+    }
+
+    const handleDownload = () => {
+      const html = document.querySelector('.template-frame')?.innerHTML || ''
+      const blob = new Blob([`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${portfolioData?.fullName || 'My Portfolio'} — Portfolio</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#0b1711;color:#f0f8f1;padding:24px}</style></head><body>${html}</body></html>`], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(portfolioData?.fullName || 'portfolio').replace(/\s+/g, '-').toLowerCase()}-portfolio.html`
+      a.click()
+      URL.revokeObjectURL(url)
+      gooeyToast.success('Portfolio downloaded!', {
+        description: 'Open the HTML file in any browser to view it.',
+      })
+    }
+
     return (
       <div className={`${appClass} ${stageClass}`}>
         <main className="generated-page">
@@ -1154,31 +1261,51 @@ function AppContent() {
 
           <div className="template-frame">{renderTemplate()}</div>
 
-          <div className="generated-actions">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={handleEditPortfolio}
-            >
-              Edit my information ↗
-            </button>
+          <div className="generated-save-section">
+            <p className="generated-save-label">What would you like to do next?</p>
+            <div className="generated-actions">
+              <button
+                className="primary-button"
+                type="button"
+                onClick={handleEditPortfolio}
+              >
+                ✏ Edit my information
+              </button>
 
-            <button
-              className="danger-button"
-              type="button"
-              onClick={() => handleDeletePortfolio(portfolioData)}
-            >
-              Delete
-            </button>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleCopyLink}
+              >
+                {shareToast ? '✓ Copied!' : '🔗 Copy share link'}
+              </button>
+
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleDownload}
+              >
+                ↓ Download as HTML
+              </button>
+
+              <button
+                className="danger-button"
+                type="button"
+                onClick={() => handleDeletePortfolio(portfolioData)}
+              >
+                Delete
+              </button>
+            </div>
+
+            <p className="template-note">
+              Your portfolio is saved and always accessible from your dashboard.
+              Share the link above so others can view it anytime.
+            </p>
           </div>
-
-          <p className="template-note">
-            Your template choice is saved. You can come back anytime
-            to change the design or edit your information.
-          </p>
         </main>
 
         {deleteModal}
+        {logoutModal}
       </div>
     )
   }
@@ -1186,15 +1313,30 @@ function AppContent() {
   // HOME (shown only when logged out)
   return (
     <div className={appClass}>
-      <header className="navbar">
+      <header className="navbar navbar-sticky">
         <a href="#home" className="logo" aria-label="PortaVista home">
           Porta<span>Vista</span>
         </a>
 
         <nav className="nav-links" aria-label="Main navigation">
-          <a href="#home">Home</a>
-          <a href="#templates">Templates</a>
-          <a href="#about">About</a>
+          <a
+            href="#home"
+            className={activeSection === 'home' ? 'nav-active' : ''}
+          >
+            Home
+          </a>
+          <a
+            href="#templates"
+            className={activeSection === 'templates' ? 'nav-active' : ''}
+          >
+            Templates
+          </a>
+          <a
+            href="#about"
+            className={activeSection === 'about' ? 'nav-active' : ''}
+          >
+            About
+          </a>
         </nav>
 
         <div className="nav-actions">
@@ -1204,6 +1346,14 @@ function AppContent() {
             onClick={() => setDarkMode(!darkMode)}
           >
             {darkMode ? '☀ Light' : '☾ Dark'}
+          </button>
+
+          <button
+            className="nav-button secondary-button"
+            type="button"
+            onClick={() => goToAccountPanel('login')}
+          >
+            Log in
           </button>
 
           <button
@@ -1243,11 +1393,11 @@ function AppContent() {
                 type="button"
                 onClick={() => goToAccountPanel('register')}
               >
-                Create your portfolio <span>↗</span>
+                Build your portfolio free <span>↗</span>
               </button>
 
               <a href="#templates" className="text-button">
-                Explore templates <span>↓</span>
+                See templates <span>↓</span>
               </a>
             </div>
 
@@ -1407,13 +1557,22 @@ function AppContent() {
             <br />
             a place to be seen.
           </h2>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => goToAccountPanel('register')}
-          >
-            Get started with PortaVista <span>↗</span>
-          </button>
+          <div className="closing-actions">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => goToAccountPanel('register')}
+            >
+              Create your free portfolio <span>↗</span>
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => goToAccountPanel('login')}
+            >
+              Already have an account? Log in
+            </button>
+          </div>
         </section>
 
         <section className="account-section" id="account-panel">

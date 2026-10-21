@@ -394,6 +394,18 @@
   gap: 10px;
 }
 
+.m-project-number {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+}
+
 .m-project-wide {
   grid-column: span 2;
 }
@@ -411,6 +423,36 @@
 .m-project h3 {
   font-size: 1.15rem;
   overflow-wrap: anywhere;
+}
+
+.m-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.m-tools li {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.m-bullets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.m-bullets li {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  font-size: 0.82rem;
 }
 
 .m-project-link {

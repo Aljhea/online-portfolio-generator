@@ -463,7 +463,13 @@ function PortfolioForm({
             type="text"
             value={fields.fullName}
             onChange={handleChange}
+            onKeyDown={(e) => {
+              // Block digit keys (allow backspace, delete, arrows, etc.)
+              if (/^[0-9]$/.test(e.key)) e.preventDefault()
+            }}
             placeholder="Enter your full name"
+            pattern="[A-Za-zÀ-ÖØ-öø-ÿ .,'\-]+"
+            title="Name should only contain letters, spaces, hyphens, or dots"
             required
           />
         </label>
@@ -481,7 +487,7 @@ function PortfolioForm({
         </label>
 
         <label>
-          Phone number
+          Phone number <span className="form-optional">(optional)</span>
           <input
             name="phone"
             type="tel"
@@ -492,7 +498,7 @@ function PortfolioForm({
         </label>
 
         <label>
-          Address
+          Address <span className="form-optional">(optional)</span>
           <input
             name="address"
             type="text"
@@ -573,7 +579,7 @@ function PortfolioForm({
             </div>
 
             <label>
-              School or university
+              School or university *
               <input
                 type="text"
                 value={row.school}
@@ -584,7 +590,7 @@ function PortfolioForm({
 
             <div className="row-grid">
               <label>
-                Degree or program
+                Degree or program <span className="form-optional">(optional)</span>
                 <input
                   type="text"
                   value={row.degree}
@@ -594,7 +600,7 @@ function PortfolioForm({
               </label>
 
               <label>
-                Years
+                Years <span className="form-optional">(optional)</span>
                 <input
                   type="text"
                   value={row.years}
@@ -747,7 +753,7 @@ function PortfolioForm({
 
             <div className="row-grid">
               <label>
-                Role
+                Role *
                 <input
                   type="text"
                   value={row.role}
@@ -757,7 +763,7 @@ function PortfolioForm({
               </label>
 
               <label>
-                Company or organization
+                Company or organization <span className="form-optional">(optional)</span>
                 <input
                   type="text"
                   value={row.company}
@@ -768,7 +774,7 @@ function PortfolioForm({
             </div>
 
             <label>
-              Period
+              Period <span className="form-optional">(optional)</span>
               <input
                 type="text"
                 value={row.period}
